@@ -1,9 +1,11 @@
 package kamon.prometheus
 
-import kamon.metric.{DynamicRange, HdrHistogram, MetricDistribution, MetricValue}
-import kamon.metric.MeasurementUnit
+import kamon.Kamon
+import kamon.metric._
 import org.scalatest.{Matchers, WordSpec}
-import kamon.metric.MeasurementUnit.{information, time, none}
+import org.HdrHistogram.ModifiedAtomicHistogram
+import org.HdrHistogram.HdrHistogramOps
+import MeasurementUnit._
 
 class ScrapeDataBuilderSpec extends WordSpec with Matchers {
 
@@ -189,12 +191,53 @@ class ScrapeDataBuilderSpec extends WordSpec with Matchers {
     PrometheusReporter.Configuration(false, "localhost", 1, buckets, buckets, buckets)
   )
 
-  private def constantDistribution(name: String, tags: Map[String, String], unit: MeasurementUnit, lower: Int, upper: Int): MetricDistribution = {
-    val histogram = new HdrHistogram(name, tags, unit, DynamicRange.Default)
-    for(value <- lower to upper) {
-      histogram.record(value, 1)
+  private def constantDistribution(
+    name: String,
+    tags: Map[String, String],
+    unit: MeasurementUnit,
+    lower: Int,
+    upper: Int
+  ): MetricDistribution = {
+    val defaultDynamicRange = Kamon.metrics.settings.defaultInstrumentFactory.defaults.histogram.dynamicRange
+
+    val histogram = {
+      val measurementUnit = TickMetricSnapshotConverter.convertMeasurementUnit(unit)
+
+      val histogram = Kamon.metrics.histogram(name, tags, measurementUnit, defaultDynamicRange)
+
+      for (value <- lower to upper) {
+        histogram.record(value, 1)
+      }
+
+      histogram.asInstanceOf[ModifiedAtomicHistogram]
     }
 
-    histogram.snapshot(resetState = true)
+    val ops = new HdrHistogramOps {
+      override def getAndSetFromCountsArray(index: Int, newValue: Long): Long =
+        histogram.countsArray().getAndSet(index, newValue)
+
+      override def protectedSubBucketHalfCount(): Int = histogram.protectedSubBucketHalfCount()
+
+      override def protectedSubBucketHalfCountMagnitude(): Int = histogram.protectedSubBucketHalfCountMagnitude()
+
+      override def getFromCountsArray(index: Int): Long = histogram.countsArray().get(index)
+
+      override def protectedUnitMagnitude(): Int = histogram.protectedUnitMagnitude()
+
+      override def getCountsArraySize(): Int = histogram.countsArray().length()
+    }
+
+    SnapshotCreation.snapshot(
+      hdrOps = ops,
+      resetState = true,
+      unit = unit,
+      dynamicRange = DynamicRange(
+        defaultDynamicRange.lowestDiscernibleValue,
+        defaultDynamicRange.highestTrackableValue,
+        defaultDynamicRange.precision
+      ),
+      name = name,
+      tags = tags
+    )
   }
 }

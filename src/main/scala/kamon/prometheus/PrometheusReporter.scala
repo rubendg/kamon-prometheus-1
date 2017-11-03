@@ -18,7 +18,7 @@ package kamon.prometheus
 import com.typesafe.config.Config
 import fi.iki.elonen.NanoHTTPD
 import fi.iki.elonen.NanoHTTPD.{Response, newFixedLengthResponse}
-import kamon.{Kamon, MetricReporter}
+import kamon.{MetricReporter, Kamon}
 import kamon.metric._
 import org.slf4j.LoggerFactory
 
@@ -36,7 +36,7 @@ class PrometheusReporter extends MetricReporter {
 
 
   override def start(): Unit = {
-    val config = readConfiguration(Kamon.config())
+    val config = readConfiguration(Kamon.config)
 
     if(config.startEmbeddedServer)
       startEmbeddedServer(config)
@@ -59,7 +59,7 @@ class PrometheusReporter extends MetricReporter {
     snapshot.metrics.histograms.foreach(accumulateDistribution(this.histograms, _))
     snapshot.metrics.minMaxCounters.foreach(accumulateDistribution(this.histograms, _))
 
-    val scrapeDataBuilder = new ScrapeDataBuilder(readConfiguration(Kamon.config()))
+    val scrapeDataBuilder = new ScrapeDataBuilder(readConfiguration(Kamon.config))
     scrapeDataBuilder.appendCounters(counters.values.map(_.snapshot()).toSeq)
     scrapeDataBuilder.appendGauges(snapshot.metrics.gauges)
     scrapeDataBuilder.appendHistograms(histograms.values.map(_.snapshot()).toSeq)

@@ -12,15 +12,14 @@
  * and limitations under the License.
  * =========================================================================================
  */
- 
+
 package kamon.prometheus
 
 import java.lang.StringBuilder
 import java.text.DecimalFormat
 
-import kamon.metric.{MetricDistribution, MetricValue}
-import kamon.metric.MeasurementUnit
-import kamon.metric.MeasurementUnit.{information, time, none}
+import kamon.metric.{MetricDistribution, MetricValue, MeasurementUnit}
+import kamon.metric.MeasurementUnit.{time, information, none}
 import kamon.metric.MeasurementUnit.Dimension._
 
 class ScrapeDataBuilder(prometheusConfig: PrometheusReporter.Configuration) {

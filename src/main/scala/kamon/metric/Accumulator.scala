@@ -13,13 +13,15 @@
  * =========================================================================================
  */
 
-resolvers += Resolver.bintrayRepo("kamon-io", "snapshots")
-val kamonCore = "io.kamon" %% "kamon-core" % "0.6.7"
-val nanohttpd = "org.nanohttpd" % "nanohttpd" % "2.3.1"
+package kamon.metric
 
-lazy val root = (project in file("."))
-  .settings(name := "kamon-prometheus-067", isSnapshot := true)
-  .settings(
-    libraryDependencies ++=
-      compileScope(kamonCore, nanohttpd) ++
-      testScope(scalatest, logbackClassic, akkaDependency("testkit").value))
+class DistributionAccumulator(dynamicRange: DynamicRange) {
+  private val accumulatorHistogram =
+    new HdrHistogram("metric-distribution-accumulator", tags = Map.empty, unit = MeasurementUnit.none, dynamicRange)
+
+  def add(distribution: Distribution): Unit =
+    distribution.bucketsIterator.foreach(b => accumulatorHistogram.record(b.value, b.frequency))
+
+  def result(resetState: Boolean): Distribution =
+    accumulatorHistogram.snapshot(resetState).distribution
+}
