@@ -1,5 +1,7 @@
 package kamon.prometheus
 
+import java.time.Instant
+
 import kamon.Kamon
 import kamon.metric.SubscriptionsDispatcher.TickMetricSnapshot
 import kamon.metric.instrument.{Histogram, Time, UnitOfMeasurement, CounterSnapshot}
@@ -17,9 +19,9 @@ class TickMetricSnapshotConverterSpec extends WordSpec with Matchers {
       metrics = Map.empty
     )
 
-    val EmptyTickSnapshot= TickSnapshot(interval = Interval(from = 1L, to = 2L), MetricsSnapshot(
+    val EmptyTickSnapshot= PeriodSnapshot(from = Instant.ofEpochMilli(1L), to = Instant.ofEpochMilli(2L), MetricsSnapshot(
       histograms = Seq.empty,
-      minMaxCounters = Seq.empty,
+      rangeSamplers = Seq.empty,
       gauges = Seq.empty,
       counters = Seq.empty
     ))
@@ -125,9 +127,9 @@ class TickMetricSnapshotConverterSpec extends WordSpec with Matchers {
       }
 
       val actual = TickMetricSnapshotConverter(oldSnapshot)
-      actual.metrics.minMaxCounters.size shouldBe 1
+      actual.metrics.rangeSamplers.size shouldBe 1
 
-      val metricDistribution = actual.metrics.minMaxCounters.head
+      val metricDistribution = actual.metrics.rangeSamplers.head
       metricDistribution.name shouldBe "http_queue_length"
       metricDistribution.tags shouldBe Map("status" -> "500")
       metricDistribution.unit shouldBe MeasurementUnit.time.milliseconds

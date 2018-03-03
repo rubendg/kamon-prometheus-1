@@ -16,7 +16,8 @@
 package kamon.prometheus
 
 import java.lang.StringBuilder
-import java.text.DecimalFormat
+import java.text.{DecimalFormat, DecimalFormatSymbols}
+import java.util.Locale
 
 import kamon.metric.{MetricDistribution, MetricValue, MeasurementUnit}
 import kamon.metric.MeasurementUnit.{time, information, none}
@@ -24,7 +25,8 @@ import kamon.metric.MeasurementUnit.Dimension._
 
 class ScrapeDataBuilder(prometheusConfig: PrometheusReporter.Configuration) {
   private val builder = new StringBuilder()
-  private val numberFormat = new DecimalFormat("#0.0########")
+  private val decimalFormatSymbols = DecimalFormatSymbols.getInstance(Locale.ROOT)
+  private val numberFormat = new DecimalFormat("#0.0########", decimalFormatSymbols)
 
   import builder.append
 

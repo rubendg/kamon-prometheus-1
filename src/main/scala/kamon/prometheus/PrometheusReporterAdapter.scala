@@ -2,11 +2,11 @@ package kamon.prometheus
 
 import kamon.Kamon
 import akka.actor.ActorDSL._
-import akka.actor.{ActorRef, PoisonPill, ActorRefFactory}
-import kamon.metric.{SubscriptionFilter, TickSnapshot}
+import akka.actor.{ActorRef, ActorRefFactory, PoisonPill}
+import kamon.metric.{SubscriptionFilter, PeriodSnapshot}
 import kamon.metric.SubscriptionsDispatcher.TickMetricSnapshot
 
-class PrometheusReporterAdapter(private val subscriptionFilter: SubscriptionFilter, private val converter: TickMetricSnapshot => TickSnapshot)(implicit private val actorRefFactory: ActorRefFactory) extends PrometheusReporter {
+class PrometheusReporterAdapter(private val subscriptionFilter: SubscriptionFilter, private val converter: TickMetricSnapshot => PeriodSnapshot)(implicit private val actorRefFactory: ActorRefFactory) extends PrometheusReporter {
 
   private[prometheus] var subscriber: Option[ActorRef] = None
 
@@ -14,7 +14,7 @@ class PrometheusReporterAdapter(private val subscriptionFilter: SubscriptionFilt
     subscriber = Some(actor(new Act {
       become {
         case tickSnapshot: TickMetricSnapshot => {
-          reportTickSnapshot(converter(tickSnapshot))
+          reportPeriodSnapshot(converter(tickSnapshot))
         }
       }
     }))

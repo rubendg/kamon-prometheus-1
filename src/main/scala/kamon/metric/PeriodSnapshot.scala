@@ -13,23 +13,27 @@
  * =========================================================================================
  */
 
-package kamon.metric
+package kamon
+package metric
+
+import java.time.Instant
+
 
 /**
+  * Contains immutable snapshots of all metrics recorded since from and until to.
   *
-  * @param interval
+  * @param from
+  * @param to
   * @param metrics
   */
-case class TickSnapshot(interval: Interval, metrics: MetricsSnapshot)
-
-case class Interval(from: Long, to: Long)
+case class PeriodSnapshot(from: Instant, to: Instant, metrics: MetricsSnapshot)
 
 case class MetricsSnapshot(
-  histograms: Seq[MetricDistribution],
-  minMaxCounters: Seq[MetricDistribution],
-  gauges: Seq[MetricValue],
-  counters: Seq[MetricValue]
-)
+                            histograms: Seq[MetricDistribution],
+                            rangeSamplers: Seq[MetricDistribution],
+                            gauges: Seq[MetricValue],
+                            counters: Seq[MetricValue]
+                          )
 
 /**
   * Snapshot for instruments that internally track a single value. Meant to be used for counters and gauges.
@@ -41,13 +45,8 @@ case class MetricValue(name: String, tags: Tags, unit: MeasurementUnit, value: L
   * Snapshot for instruments that internally the distribution of values in a defined dynamic range. Meant to be used
   * with histograms and min max counters.
   */
-case class MetricDistribution(
-  name: String,
-  tags: Tags,
-  unit: MeasurementUnit,
-  dynamicRange: DynamicRange,
-  distribution: Distribution
-)
+case class MetricDistribution(name: String, tags: Tags, unit: MeasurementUnit,  dynamicRange: DynamicRange, distribution: Distribution)
+
 
 trait Distribution {
   def buckets: Seq[Bucket]
@@ -73,3 +72,4 @@ trait Percentile {
   def value: Long
   def countUnderQuantile: Long
 }
+

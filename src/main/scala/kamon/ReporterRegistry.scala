@@ -1,7 +1,7 @@
 package kamon
 
 import com.typesafe.config.Config
-import kamon.metric.TickSnapshot
+import kamon.metric.PeriodSnapshot
 
 sealed trait Reporter {
   def start(): Unit
@@ -10,5 +10,5 @@ sealed trait Reporter {
 }
 
 trait MetricReporter extends Reporter {
-  def reportTickSnapshot(snapshot: TickSnapshot): Unit
+  def reportPeriodSnapshot(snapshot: PeriodSnapshot): Unit
 }

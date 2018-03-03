@@ -1,15 +1,17 @@
 package kamon.prometheus
 
+import java.time.Instant
+
 import scala.collection.mutable.ListBuffer
 import scala.collection.concurrent.TrieMap
 import org.HdrHistogram.AtomicHistogram
 import kamon.Kamon
-import kamon.metric.MeasurementUnit.{Dimension, Magnitude}
+import kamon.metric.MeasurementUnit.{Magnitude, Dimension}
 import kamon.metric.SubscriptionsDispatcher.TickMetricSnapshot
 import kamon.metric.instrument._
 import kamon.metric._
 
-object TickMetricSnapshotConverter extends ((TickMetricSnapshot) => TickSnapshot) {
+object TickMetricSnapshotConverter extends ((TickMetricSnapshot) => PeriodSnapshot) {
 
   private def convertUnitOfMeasurement(unitOfMeasurement: UnitOfMeasurement): MeasurementUnit =
     unitOfMeasurement match {
@@ -155,11 +157,11 @@ object TickMetricSnapshotConverter extends ((TickMetricSnapshot) => TickSnapshot
     )
   }
 
-  def apply(tickMetricSnapshot: TickMetricSnapshot): TickSnapshot = {
+  def apply(tickMetricSnapshot: TickMetricSnapshot): PeriodSnapshot = {
     val counters: ListBuffer[MetricValue] = ListBuffer.empty
     val gauges: ListBuffer[MetricValue] = ListBuffer.empty
     val histograms: ListBuffer[MetricDistribution] = ListBuffer.empty
-    val minMaxCounters: ListBuffer[MetricDistribution] = ListBuffer.empty
+    val rangeSamplers: ListBuffer[MetricDistribution] = ListBuffer.empty
 
     for ((entity, entitySnapshot) <- tickMetricSnapshot.metrics) {
       entitySnapshot.counters.map {
@@ -172,16 +174,17 @@ object TickMetricSnapshotConverter extends ((TickMetricSnapshot) => TickSnapshot
         case (metricKey, snapshot) => toMetricDistribution(entity, metricKey, snapshot).foreach(histograms += _)
       }
       entitySnapshot.minMaxCounters.foreach {
-        case (metricKey, snapshot) => toMetricDistribution(entity, metricKey, snapshot).foreach(minMaxCounters += _)
+        case (metricKey, snapshot) => toMetricDistribution(entity, metricKey, snapshot).foreach(rangeSamplers += _)
       }
     }
 
-    TickSnapshot(
-      Interval(tickMetricSnapshot.from.millis, tickMetricSnapshot.to.millis),
+    PeriodSnapshot(
+      from = Instant.ofEpochMilli(tickMetricSnapshot.from.millis),
+      to = Instant.ofEpochMilli(tickMetricSnapshot.to.millis),
       MetricsSnapshot(
         counters = counters,
         histograms = histograms,
-        minMaxCounters = minMaxCounters,
+        rangeSamplers = rangeSamplers,
         gauges = gauges
       )
     )
